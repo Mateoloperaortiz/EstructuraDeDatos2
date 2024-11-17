@@ -1,11 +1,13 @@
 # Documentación del Buscador de Rutas de Vuelo
 
 ## Descripción General
+
 Este programa implementa un sistema de búsqueda de rutas de vuelo utilizando grafos y algoritmos de ordenamiento. Permite encontrar todas las rutas posibles entre dos ciudades, ordenarlas por costo o número de escalas, y mantener un historial de búsquedas.
 
 ## Estructura del Proyecto
 
 ### Archivos del Sistema
+
 - **buscador_rutas.py**: Archivo principal con el código del programa
 - **rutas.csv**: Base de datos de rutas y costos
 - **historial_busquedas.json**: Almacenamiento del historial de búsquedas
@@ -13,12 +15,14 @@ Este programa implementa un sistema de búsqueda de rutas de vuelo utilizando gr
 ### Clase Principal: BuscadorRutas
 
 #### Atributos
+
 - `grafo`: Diccionario que almacena el grafo de rutas
 - `historial_busquedas`: Lista que almacena el historial de búsquedas realizadas
 
 #### Métodos Principales
 
 ##### Gestión de Datos
+
 1. `cargar_grafo()`
    - Carga las rutas desde el archivo CSV
    - Crea la estructura del grafo en memoria
@@ -29,6 +33,7 @@ Este programa implementa un sistema de búsqueda de rutas de vuelo utilizando gr
    - Utilizan formato JSON para almacenamiento
 
 ##### Algoritmos de Búsqueda
+
 1. `encontrar_todas_las_rutas(origen, destino)`
    - Implementa búsqueda en profundidad (DFS)
    - Encuentra todos los caminos posibles entre dos ciudades
@@ -36,6 +41,7 @@ Este programa implementa un sistema de búsqueda de rutas de vuelo utilizando gr
    - Evita ciclos en las rutas
 
 ##### Algoritmos de Ordenamiento
+
 1. `ordenar_por_costo(rutas)`
    - Implementa ordenamiento por inserción
    - Ordena las rutas de menor a mayor costo
@@ -45,6 +51,7 @@ Este programa implementa un sistema de búsqueda de rutas de vuelo utilizando gr
    - Ordena las rutas por número de escalas
 
 ##### Visualización
+
 1. `mostrar_rutas(rutas, tipo_orden)`
    - Muestra las mejores 10 rutas encontradas
    - Formatea la salida según el tipo de ordenamiento
@@ -57,8 +64,10 @@ Este programa implementa un sistema de búsqueda de rutas de vuelo utilizando gr
 ## Estructuras de Datos Utilizadas
 
 ### 1. Grafo
+
 - **Implementación**: Diccionario de listas de adyacencia
 - **Estructura**:
+
 ```python
 {
     'ciudad_origen': [('ciudad_destino', costo), ...]
@@ -66,8 +75,10 @@ Este programa implementa un sistema de búsqueda de rutas de vuelo utilizando gr
 ```
 
 ### 2. Rutas
+
 - **Implementación**: Lista de tuplas
 - **Estructura**:
+
 ```python
 [
     ([ciudad1, ciudad2, ..., ciudadN], costo_total),
@@ -76,8 +87,10 @@ Este programa implementa un sistema de búsqueda de rutas de vuelo utilizando gr
 ```
 
 ### 3. Historial
+
 - **Implementación**: Lista de diccionarios
 - **Estructura**:
+
 ```python
 [
     {
@@ -95,12 +108,14 @@ Este programa implementa un sistema de búsqueda de rutas de vuelo utilizando gr
 ## Algoritmos Implementados
 
 ### 1. Búsqueda en Profundidad (DFS)
+
 - Utilizado para encontrar todas las rutas posibles
 - Complejidad temporal: O(V + E) donde V son vértices y E aristas
 - Implementado de forma recursiva
 - Incluye control de ciclos
 
 ### 2. Ordenamiento por Inserción
+
 - Utilizado para ordenar rutas por costo y escalas
 - Complejidad temporal: O(n²)
 - Ventajas:
@@ -111,17 +126,21 @@ Este programa implementa un sistema de búsqueda de rutas de vuelo utilizando gr
 ## Uso del Programa
 
 ### Requisitos
+
 - Python 3.x
 - Archivos necesarios en el mismo directorio
 
 ### Ejecución
+
 1. Preparar el archivo CSV con las rutas
 2. Ejecutar el programa:
+
 ```bash
 python buscador_rutas.py
 ```
 
 ### Opciones del Menú
+
 1. **Buscar rutas**
    - Ingresa ciudad de origen y destino
    - Muestra top 10 rutas por costo y escalas
