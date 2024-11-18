@@ -1,0 +1,25 @@
+{
+  "busquedas": [
+    {
+      "fecha": "2024-11-18 11:01:17",
+      "origen": "Medellin",
+      "destino": "Miami",
+      "rutas_encontradas": 46,
+      "mejor_precio": 385.6,
+      "mejor_duracion": 3.5,
+      "menos_escalas": 0
+    },
+    {
+      "fecha": "2024-11-18 11:02:19",
+      "origen": "Medellin",
+      "destino": "Miami",
+      "rutas_encontradas": 46,
+      "mejor_precio": 385.6,
+      "mejor_duracion": 3.5,
+      "menos_escalas": 0
+    }
+  ],
+  "rutas_populares": {
+    "Medellin-Miami": 2
+  }
+}

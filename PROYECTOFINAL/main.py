@@ -2,15 +2,18 @@ import csv
 from datetime import datetime
 import json
 from pathlib import Path
+from collections import Counter
+from typing import List, Tuple, Dict
 
 class BuscadorRutas:
     def __init__(self):
         self.grafo = {}
         self.historial_busquedas = []
-        self.cargar_grafo()
+        self.estadisticas = {'rutas_populares': Counter()}
+        self.cargar_grafo("PROYECTOFINAL/rutas_vuelos.csv")
         self.cargar_historial()
 
-    def cargar_grafo(self, nombre_archivo="rutas.csv"):
+    def cargar_grafo(self, nombre_archivo):
         try:
             with open(nombre_archivo, 'r', encoding='utf-8') as archivo:
                 lector = csv.reader(archivo)
@@ -18,179 +21,229 @@ class BuscadorRutas:
                 self.grafo = {}
                 
                 for fila in lector:
-                    origen, destino, costo = fila
-                    costo = float(costo)
-                    
+                    origen, destino, costo, duracion = fila
                     if origen not in self.grafo:
                         self.grafo[origen] = []
-                    self.grafo[origen].append((destino, costo))
+                    self.grafo[origen].append({
+                        'destino': destino,
+                        'costo': float(costo),
+                        'duracion': float(duracion)
+                    })
                     
-            print(f"Datos cargados exitosamente de {nombre_archivo}")
         except FileNotFoundError:
-            print(f"No se encontró el archivo {nombre_archivo}. Creando uno nuevo...")
-            self._crear_datos_ejemplo(nombre_archivo)
-
-    def _crear_datos_ejemplo(self, nombre_archivo):
-        datos_ejemplo = [
-            ['origen', 'destino', 'costo'],
-            ['Medellin', 'Bogota', '58.85'],
-            ['Medellin', 'Barranquilla', '89.44'],
-            ['Medellin', 'Cartagena', '96.40'],
-            ['Medellin', 'Montreal', '498.71'],
-            ['Medellin', 'Toronto', '509.62'],
-            ['Bogota', 'Medellin', '58.85'],
-            ['Bogota', 'Barranquilla', '80.66'],
-            ['Bogota', 'Cartagena', '82.71'],
-            ['Bogota', 'Montreal', '419.10'],
-            ['Bogota', 'Toronto', '428.49']
-        ]
-        
-        with open(nombre_archivo, 'w', newline='', encoding='utf-8') as archivo:
-            escritor = csv.writer(archivo)
-            escritor.writerows(datos_ejemplo)
+            print(f"Error: No se encontró el archivo {nombre_archivo}")
+            return
 
     def cargar_historial(self, nombre_archivo="historial_busquedas.json"):
         try:
             with open(nombre_archivo, 'r', encoding='utf-8') as archivo:
-                self.historial_busquedas = json.load(archivo)
+                data = json.load(archivo)
+                self.historial_busquedas = data['busquedas']
+                self.estadisticas['rutas_populares'].update(data.get('rutas_populares', {}))
         except FileNotFoundError:
             self.historial_busquedas = []
+            with open(nombre_archivo, 'w', encoding='utf-8') as archivo:
+                json.dump({'busquedas': [], 'rutas_populares': {}}, archivo)
+        except json.JSONDecodeError:
+            print("Error al leer el historial. Creando uno nuevo.")
+            self.historial_busquedas = []
+            with open(nombre_archivo, 'w', encoding='utf-8') as archivo:
+                json.dump({'busquedas': [], 'rutas_populares': {}}, archivo)
 
-    def guardar_historial(self, nombre_archivo="historial_busquedas.json"):
+    def guardar_historial(self, nombre_archivo="PROYECTOFINAL/historial_busquedas.json"):
+        data = {
+            'busquedas': self.historial_busquedas,
+            'rutas_populares': dict(self.estadisticas['rutas_populares'])
+        }
         with open(nombre_archivo, 'w', encoding='utf-8') as archivo:
-            json.dump(self.historial_busquedas, archivo, indent=2, ensure_ascii=False)
+            json.dump(data, archivo, indent=2, ensure_ascii=False)
 
     def guardar_busqueda(self, origen, destino, rutas):
+        mejor_ruta = rutas[0] if rutas else None
         entrada_busqueda = {
             'fecha': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             'origen': origen,
             'destino': destino,
             'rutas_encontradas': len(rutas),
-            'mejor_precio': min(costo for _, costo in rutas) if rutas else None,
-            'menos_escalas': min(len(camino) - 1 for camino, _ in rutas) if rutas else None
+            'mejor_precio': mejor_ruta['costo'] if mejor_ruta else None,
+            'mejor_duracion': mejor_ruta['duracion'] if mejor_ruta else None,
+            'menos_escalas': len(mejor_ruta['camino']) - 2 if mejor_ruta else None
         }
         self.historial_busquedas.append(entrada_busqueda)
         self.guardar_historial()
 
-    def encontrar_todas_las_rutas(self, origen, destino, camino=None, costo_total=0):
+    def encontrar_todas_las_rutas(self, origen: str, destino: str, max_precio: float = float('inf'),
+                                 max_escalas: int = float('inf'), camino=None, costo_total=0.0, duracion_total=0.0):
         if camino is None:
             camino = []
         
         camino_actual = camino + [origen]
         
+        if len(camino_actual) - 1 > max_escalas + 1:
+            return []
+            
         if origen == destino:
-            return [(camino_actual, costo_total)]
+            if costo_total <= max_precio:
+                return [{'camino': camino_actual, 'costo': costo_total, 'duracion': duracion_total}]
+            return []
             
         if origen not in self.grafo:
             return []
             
         rutas = []
-        for siguiente_ciudad, costo in self.grafo[origen]:
-            if siguiente_ciudad not in camino_actual:
-                nuevas_rutas = self.encontrar_todas_las_rutas(
-                    siguiente_ciudad, destino, camino_actual, costo_total + costo
-                )
-                rutas.extend(nuevas_rutas)
+        for conexion in self.grafo[origen]:
+            siguiente = conexion['destino']
+            if siguiente not in camino_actual:
+                nuevo_costo = costo_total + conexion['costo']
+                if nuevo_costo <= max_precio:
+                    nuevas_rutas = self.encontrar_todas_las_rutas(
+                        siguiente, destino, max_precio, max_escalas,
+                        camino_actual, nuevo_costo, duracion_total + conexion['duracion']
+                    )
+                    rutas.extend(nuevas_rutas)
         
         return rutas
 
-    def obtener_mejores_rutas(self, rutas, limite=10, ordenar_por="costo"):
-        if ordenar_por == "costo":
-            rutas_ordenadas = self.ordenar_por_costo(rutas.copy())
-        else:
-            rutas_ordenadas = self.ordenar_por_escalas(rutas.copy())
-        
-        return rutas_ordenadas[:limite]
-
-    def ordenar_por_costo(self, rutas):
-        for i in range(1, len(rutas)):
-            clave = rutas[i]
-            j = i - 1
-            while j >= 0 and clave[1] < rutas[j][1]:
-                rutas[j + 1] = rutas[j]
-                j -= 1
-            rutas[j + 1] = clave
-        return rutas
-
-    def ordenar_por_escalas(self, rutas):
-        for i in range(1, len(rutas)):
-            clave = rutas[i]
-            j = i - 1
-            while j >= 0 and len(clave[0]) < len(rutas[j][0]):
-                rutas[j + 1] = rutas[j]
-                j -= 1
-            rutas[j + 1] = clave
-        return rutas
-
-    def mostrar_rutas(self, rutas, tipo_orden="costo"):
+    def mostrar_rutas(self, rutas: List[Dict], tipo_orden: str = "costo"):
         if not rutas:
-            print("No se encontraron rutas.")
+            print("\nNo se encontraron rutas que cumplan con los criterios especificados.")
             return
 
-        if tipo_orden == "costo":
-            print("\nTOP 10 RUTAS POR COSTO EN USD (DE MENOR A MAYOR):")
-            for camino, costo in rutas:
-                print(f"Ruta: {' → '.join(camino)}")
-                print(f"Costo total: ${costo:.2f} USD\n")
-        else:
-            print("\nTOP 10 RUTAS POR CANTIDAD DE ESCALAS (DE MENOR A MAYOR):")
-            for camino, costo in rutas:
-                escalas = len(camino) - 2
-                print(f"Ruta: {' → '.join(camino)}")
-                print(f"Cantidad de escalas: {escalas}\n")
+        print("\n" + "="*80)
+        print(f"{'RUTAS ENCONTRADAS':^80}")
+        print("="*80)
+
+        for i, ruta in enumerate(rutas, 1):
+            print(f"\nRuta {i}:")
+            print("-" * 40)
+            
+            camino = " → ".join(ruta['camino'])
+            print(f"Trayecto: {camino}")
+            
+            escalas = len(ruta['camino']) - 2
+            texto_escalas = "directa" if escalas == 0 else f"{escalas} escala{'s' if escalas > 1 else ''}"
+            print(f"Tipo: Ruta {texto_escalas}")
+            
+            print(f"Costo total: ${ruta['costo']:.2f} USD")
+            
+            horas = int(ruta['duracion'])
+            minutos = int((ruta['duracion'] - horas) * 60)
+            print(f"Duración total: {horas}h {minutos:02d}min")
+            
+            print("-" * 40)
 
     def mostrar_historial(self):
         if not self.historial_busquedas:
             print("\nNo hay historial de búsquedas.")
             return
 
-        print("\nHISTORIAL DE BÚSQUEDAS:")
-        print("-" * 80)
+        print("\n" + "="*80)
+        print(f"{'HISTORIAL DE BÚSQUEDAS':^80}")
+        print("="*80)
+        
         for entrada in self.historial_busquedas:
-            print(f"Fecha: {entrada['fecha']}")
-            print(f"Origen: {entrada['origen']}")
-            print(f"Destino: {entrada['destino']}")
+            print(f"\nFecha: {entrada['fecha']}")
+            print(f"Ruta: {entrada['origen']} → {entrada['destino']}")
             print(f"Rutas encontradas: {entrada['rutas_encontradas']}")
+            
             if entrada['mejor_precio']:
                 print(f"Mejor precio: ${entrada['mejor_precio']:.2f} USD")
+            
+            if entrada['mejor_duracion']:
+                horas = int(entrada['mejor_duracion'])
+                minutos = int((entrada['mejor_duracion'] - horas) * 60)
+                print(f"Mejor duración: {horas}h {minutos:02d}min")
+            
             if entrada['menos_escalas'] is not None:
                 print(f"Menor cantidad de escalas: {entrada['menos_escalas']}")
-            print("-" * 80)
+            
+            print("-" * 40)
+
+    def actualizar_estadisticas(self, origen: str, destino: str, ruta_elegida: Dict):
+        ruta_key = f"{origen}-{destino}"
+        self.estadisticas['rutas_populares'][ruta_key] += 1
+
+    def mostrar_estadisticas(self):
+        print("\n" + "="*80)
+        print(f"{'ESTADÍSTICAS DE BÚSQUEDAS':^80}")
+        print("="*80)
+        
+        if not self.estadisticas['rutas_populares']:
+            print("\nAún no hay estadísticas disponibles.")
+            return
+
+        print("\nRutas más buscadas:")
+        for ruta, cantidad in self.estadisticas['rutas_populares'].most_common(5):
+            origen, destino = ruta.split('-')
+            print(f"{origen} → {destino}: {cantidad} búsqueda{'s' if cantidad > 1 else ''}")
+
+        if self.historial_busquedas:
+            total_busquedas = len(self.historial_busquedas)
+            suma_costos = sum(b['mejor_precio'] for b in self.historial_busquedas if b['mejor_precio'])
+            promedio_costo = suma_costos / total_busquedas if total_busquedas > 0 else 0
+            
+            print(f"\nTotal de búsquedas realizadas: {total_busquedas}")
+            print(f"Costo promedio de rutas: ${promedio_costo:.2f} USD")
 
 def main():
     buscador = BuscadorRutas()
     
     while True:
-        print("\n=== BUSCADOR DE RUTAS DE VUELO ===")
+        print("\n" + "="*40)
+        print(f"{'BUSCADOR DE RUTAS DE VUELO':^40}")
+        print("="*40)
         print("1. Buscar rutas")
         print("2. Ver historial de búsquedas")
-        print("3. Salir")
+        print("3. Ver estadísticas")
+        print("4. Salir")
         
         opcion = input("\nSeleccione una opción: ").strip()
         
         if opcion == "1":
-            ciudad_origen = input("Ingrese su ciudad de origen: ").strip().title()
-            ciudad_destino = input("Ingrese su ciudad destino: ").strip().title()
+            ciudad_origen = input("Ciudad de origen: ").strip().title()
+            ciudad_destino = input("Ciudad destino: ").strip().title()
             
-            rutas = buscador.encontrar_todas_las_rutas(ciudad_origen, ciudad_destino)
+            if ciudad_origen not in buscador.grafo:
+                print(f"\nError: {ciudad_origen} no está en nuestra red de rutas")
+                print("Ciudades disponibles:", ", ".join(sorted(buscador.grafo.keys())))
+                continue
+
+            try:
+                precio_input = input("Precio máximo (Enter para sin límite): ").strip()
+                max_precio = float(precio_input) if precio_input else float('inf')
+                
+                escalas_input = input("Número máximo de escalas (Enter para sin límite): ").strip()
+                max_escalas = int(escalas_input) if escalas_input else 999
+            except ValueError:
+                print("Valor inválido. Usando sin límites.")
+                max_precio = float('inf')
+                max_escalas = 999
+
+            rutas = buscador.encontrar_todas_las_rutas(
+                ciudad_origen, ciudad_destino,
+                max_precio=max_precio,
+                max_escalas=max_escalas
+            )
+
             if rutas:
-                mejores_rutas_costo = buscador.obtener_mejores_rutas(rutas, limite=10, ordenar_por="costo")
-                buscador.mostrar_rutas(mejores_rutas_costo, "costo")
-                
-                mejores_rutas_escalas = buscador.obtener_mejores_rutas(rutas, limite=10, ordenar_por="escalas")
-                buscador.mostrar_rutas(mejores_rutas_escalas, "escalas")
-                
-                buscador.guardar_busqueda(ciudad_origen, ciudad_destino, rutas)
+                rutas_ordenadas = sorted(rutas, key=lambda x: x['costo'])
+                buscador.mostrar_rutas(rutas_ordenadas[:10])
+                buscador.actualizar_estadisticas(ciudad_origen, ciudad_destino, rutas_ordenadas[0])
+                buscador.guardar_busqueda(ciudad_origen, ciudad_destino, rutas_ordenadas)
             else:
                 print(f"\nNo se encontraron rutas entre {ciudad_origen} y {ciudad_destino}")
-        
+                print("que cumplan con los criterios especificados.")
+                
         elif opcion == "2":
             buscador.mostrar_historial()
-        
+            
         elif opcion == "3":
+            buscador.mostrar_estadisticas()
+            
+        elif opcion == "4":
             print("\n¡Gracias por usar el buscador de rutas!")
             break
-        
+            
         else:
             print("\nOpción no válida. Por favor, intente de nuevo.")
 

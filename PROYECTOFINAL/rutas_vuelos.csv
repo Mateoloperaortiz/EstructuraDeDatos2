@@ -1,0 +1,53 @@
+origen,destino,costo,duracion
+Medellin,Bogota,58.85,1.0
+Medellin,Barranquilla,89.44,1.2
+Medellin,Cartagena,96.40,1.3
+Medellin,Miami,385.60,3.5
+Medellin,Ciudad de Mexico,460.75,4.2
+Medellin,Lima,320.40,4.0
+Bogota,Medellin,58.85,1.0
+Bogota,Barranquilla,80.66,1.1
+Bogota,Cartagena,82.71,1.2
+Bogota,Miami,395.40,3.8
+Bogota,Lima,280.40,3.2
+Bogota,Santiago,420.60,4.5
+Bogota,Buenos Aires,520.30,5.2
+Barranquilla,Bogota,80.66,1.1
+Barranquilla,Medellin,89.44,1.2
+Barranquilla,Miami,375.40,3.2
+Barranquilla,Panama,195.30,2.0
+Cartagena,Bogota,82.71,1.2
+Cartagena,Medellin,96.40,1.3
+Cartagena,Miami,360.50,3.0
+Cartagena,Panama,185.40,1.8
+Panama,Barranquilla,195.30,2.0
+Panama,Cartagena,185.40,1.8
+Panama,Miami,320.60,2.8
+Panama,Lima,360.50,3.5
+Miami,Medellin,385.60,3.5
+Miami,Bogota,395.40,3.8
+Miami,Barranquilla,375.40,3.2
+Miami,Cartagena,360.50,3.0
+Miami,Panama,320.60,2.8
+Miami,Nueva York,185.40,2.5
+Miami,Los Angeles,320.50,5.0
+Miami,Toronto,260.30,3.0
+Ciudad de Mexico,Miami,285.60,4.0
+Ciudad de Mexico,Los Angeles,375.40,4.2
+Ciudad de Mexico,Bogota,460.75,4.2
+Lima,Bogota,280.40,3.2
+Lima,Santiago,260.30,3.0
+Lima,Buenos Aires,385.40,4.0
+Santiago,Lima,260.30,3.0
+Santiago,Buenos Aires,280.50,2.0
+Buenos Aires,Santiago,280.50,2.0
+Buenos Aires,Lima,385.40,4.0
+Nueva York,Miami,185.40,2.5
+Nueva York,Toronto,160.30,1.5
+Nueva York,Los Angeles,350.40,5.5
+Toronto,Nueva York,160.30,1.5
+Toronto,Miami,260.30,3.0
+Toronto,Los Angeles,420.50,5.2
+Los Angeles,Nueva York,350.40,5.5
+Los Angeles,Miami,320.50,5.0
+Los Angeles,Toronto,420.50,5.2
