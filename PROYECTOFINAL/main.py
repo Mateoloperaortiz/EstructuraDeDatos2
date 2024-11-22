@@ -104,7 +104,7 @@ class BuscadorRutas:
         
         return rutas
 
-    def mostrar_rutas(self, rutas: List[Dict], tipo_orden: str = "costo"):
+    def mostrar_rutas(self, rutas: List[Dict]):
         if not rutas:
             print("\nNo se encontraron rutas que cumplan con los criterios especificados.")
             return
@@ -121,7 +121,10 @@ class BuscadorRutas:
             print(f"Trayecto: {camino}")
             
             escalas = len(ruta['camino']) - 2
-            texto_escalas = "directa" if escalas == 0 else f"{escalas} escala{'s' if escalas > 1 else ''}"
+            if escalas == 0:
+                texto_escalas = "directa"
+            else:
+                texto_escalas = f"{escalas} escala{'s' if escalas > 1 else ''}"
             print(f"Tipo: Ruta {texto_escalas}")
             
             print(f"Costo total: ${ruta['costo']:.2f} USD")
@@ -159,7 +162,7 @@ class BuscadorRutas:
             
             print("-" * 40)
 
-    def actualizar_estadisticas(self, origen: str, destino: str, ruta_elegida: Dict):
+    def actualizar_estadisticas(self, origen: str, destino: str):
         ruta_key = f"{origen}-{destino}"
         self.estadisticas['rutas_populares'][ruta_key] += 1
 
@@ -189,63 +192,65 @@ def main():
     buscador = BuscadorRutas()
     
     while True:
-        print("\n" + "="*40)
-        print(f"{'BUSCADOR DE RUTAS DE VUELO':^40}")
-        print("="*40)
-        print("1. Buscar rutas")
-        print("2. Ver historial de búsquedas")
-        print("3. Ver estadísticas")
-        print("4. Salir")
+        mostrar_menu()
         
         opcion = input("\nSeleccione una opción: ").strip()
         
         if opcion == "1":
-            ciudad_origen = input("Ciudad de origen: ").strip().title()
-            ciudad_destino = input("Ciudad destino: ").strip().title()
-            
-            if ciudad_origen not in buscador.grafo:
-                print(f"\nError: {ciudad_origen} no está en nuestra red de rutas")
-                print("Ciudades disponibles:", ", ".join(sorted(buscador.grafo.keys())))
-                continue
-
-            try:
-                precio_input = input("Precio máximo (Enter para sin límite): ").strip()
-                max_precio = float(precio_input) if precio_input else float('inf')
-                
-                escalas_input = input("Número máximo de escalas (Enter para sin límite): ").strip()
-                max_escalas = int(escalas_input) if escalas_input else 999
-            except ValueError:
-                print("Valor inválido. Usando sin límites.")
-                max_precio = float('inf')
-                max_escalas = 999
-
-            rutas = buscador.encontrar_todas_las_rutas(
-                ciudad_origen, ciudad_destino,
-                max_precio=max_precio,
-                max_escalas=max_escalas
-            )
-
-            if rutas:
-                rutas_ordenadas = sorted(rutas, key=lambda x: x['costo'])
-                buscador.mostrar_rutas(rutas_ordenadas[:10])
-                buscador.actualizar_estadisticas(ciudad_origen, ciudad_destino, rutas_ordenadas[0])
-                buscador.guardar_busqueda(ciudad_origen, ciudad_destino, rutas_ordenadas)
-            else:
-                print(f"\nNo se encontraron rutas entre {ciudad_origen} y {ciudad_destino}")
-                print("que cumplan con los criterios especificados.")
-                
+            opcion_buscar_rutas(buscador)
         elif opcion == "2":
             buscador.mostrar_historial()
-            
         elif opcion == "3":
             buscador.mostrar_estadisticas()
-            
         elif opcion == "4":
             print("\n¡Gracias por usar el buscador de rutas!")
             break
-            
         else:
             print("\nOpción no válida. Por favor, intente de nuevo.")
+
+def mostrar_menu():
+    print("\n" + "="*40)
+    print(f"{'BUSCADOR DE RUTAS DE VUELO':^40}")
+    print("="*40)
+    print("1. Buscar rutas")
+    print("2. Ver historial de búsquedas")
+    print("3. Ver estadísticas")
+    print("4. Salir")
+
+def opcion_buscar_rutas(buscador):
+    ciudad_origen = input("Ciudad de origen: ").strip().title()
+    ciudad_destino = input("Ciudad destino: ").strip().title()
+    
+    if ciudad_origen not in buscador.grafo:
+        print(f"\nError: {ciudad_origen} no está en nuestra red de rutas")
+        print("Ciudades disponibles:", ", ".join(sorted(buscador.grafo.keys())))
+        return
+
+    try:
+        precio_input = input("Precio máximo (Enter para sin límite): ").strip()
+        max_precio = float(precio_input) if precio_input else float('inf')
+        
+        escalas_input = input("Número máximo de escalas (Enter para sin límite): ").strip()
+        max_escalas = int(escalas_input) if escalas_input else 999
+    except ValueError:
+        print("Valor inválido. Usando sin límites.")
+        max_precio = float('inf')
+        max_escalas = 999
+
+    rutas = buscador.encontrar_todas_las_rutas(
+        ciudad_origen, ciudad_destino,
+        max_precio=max_precio,
+        max_escalas=max_escalas
+    )
+
+    if rutas:
+        rutas_ordenadas = sorted(rutas, key=lambda x: x['costo'])
+        buscador.mostrar_rutas(rutas_ordenadas[:10])
+        buscador.actualizar_estadisticas(ciudad_origen, ciudad_destino)
+        buscador.guardar_busqueda(ciudad_origen, ciudad_destino, rutas_ordenadas)
+    else:
+        print(f"\nNo se encontraron rutas entre {ciudad_origen} y {ciudad_destino}")
+        print("que cumplan con los criterios especificados.")
 
 if __name__ == "__main__":
     main()
